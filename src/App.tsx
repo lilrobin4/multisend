@@ -55,6 +55,7 @@ export default function App() {
   const [paused, setPaused] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
   const [csvText, setCsvText] = useState('');
+  const [pickFor, setPickFor] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
   const [book, setBook] = useState<Book>(() => loadBook());
   const [history, setHistory] = useState<HistBatch[]>(() => loadHistory());
@@ -404,6 +405,14 @@ export default function App() {
                   />
                   <button
                     className="btn btn-secondary"
+                    title="Pick from address book"
+                    style={{ minHeight: 40, padding: '8px 12px' }}
+                    onClick={() => setPickFor(pickFor === r.key ? null : r.key)}
+                  >
+                    📖
+                  </button>
+                  <button
+                    className="btn btn-secondary"
                     style={{ minHeight: 40, padding: '8px 12px' }}
                     onClick={() => setRows((p) => p.filter((x) => x.key !== r.key))}
                   >
@@ -412,6 +421,31 @@ export default function App() {
                 </div>
                 {err && <p style={{ color: '#ff8a8a', fontSize: 13, margin: '6px 0 0' }}>⚠️ {err}</p>}
                 {!err && isDupe && <p style={{ color: '#f5c86e', fontSize: 13, margin: '6px 0 0' }}>⚠️ same address twice — will pay twice</p>}
+                {pickFor === r.key && (
+                  <div className="book-pick">
+                    {Object.keys(book).length === 0 ? (
+                      <p style={{ color: '#a9b4cc', fontSize: 13, margin: 0 }}>
+                        Book empty — labels you type while sending are remembered here.
+                      </p>
+                    ) : (
+                      Object.entries(book).map(([a, l]) => (
+                        <button
+                          key={a}
+                          className="book-pick-item"
+                          onClick={() => {
+                            setRows((prev) =>
+                              prev.map((x) => (x.key === r.key ? { ...x, address: a, label: l } : x)),
+                            );
+                            setPickFor(null);
+                          }}
+                        >
+                          <strong>{l}</strong>{' '}
+                          <span className="mono" style={{ fontSize: 12 }}>{shortAddr(a, 14)}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
