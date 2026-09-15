@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react';
-import { formatNim, normNQ, parseCSV, parseNimToLuna, shortAddr, shortBatchId, validAddress } from './lib';
+import { explorerLink, formatNim, normNQ, parseCSV, parseNimToLuna, shortAddr, shortBatchId, validAddress } from './lib';
 import { NETWORK, connectWallet, sendOne, waitConfirm } from './nimiq';
 import { loadBook, loadHistory, pushHistory, remember, saveBook } from './storage';
 import type { Book, HistBatch } from './storage';
@@ -489,6 +489,11 @@ export default function App() {
           )}
           <div className="card" style={{ marginTop: 12 }}>
             <p style={{ margin: 0, fontWeight: 800 }}>Batch {batchId} · {terminal}/{sendRows.length} done</p>
+            {me && (
+              <p style={{ margin: '4px 0 0', fontSize: 13 }}>
+                <a href={explorerLink(NETWORK, me)} target="_blank" rel="noopener noreferrer">🔍 View sender history on explorer</a>
+              </p>
+            )}
             <div className="bar">
               <div className="bar-fill" style={{ width: `${sendRows.length ? Math.round((terminal / sendRows.length) * 100) : 0}%` }} />
             </div>
@@ -522,6 +527,7 @@ export default function App() {
               <p style={{ margin: '4px 0 0', fontSize: 13, color: '#a9b4cc' }}>
                 <span className={`st st-${r.status}`}>{STATUS_PILL[r.status]}</span>
                 {r.hash && <span className="mono" style={{ fontSize: 12 }}> · {r.hash.slice(0, 16)}…</span>}
+                {' '}<a href={explorerLink(NETWORK, r.address)} target="_blank" rel="noopener noreferrer" title="View recipient on explorer" style={{ fontSize: 12 }}>🔍</a>
                 {r.error && <span style={{ color: '#ff8a8a' }}> · {r.error}</span>}
               </p>
             </div>
@@ -568,7 +574,7 @@ export default function App() {
               </p>
               {h.rows.map((r, i) => (
                 <p key={i} style={{ fontSize: 13, margin: '4px 0', color: '#cfd8ec' }}>
-                  {r.amount} NIM → <span className="mono">{shortAddr(r.address, 10)}</span> · {r.status}
+                  {r.amount} NIM → <span className="mono">{shortAddr(r.address, 10)}</span> · {r.status}{' '}<a href={explorerLink(NETWORK, r.address)} target="_blank" rel="noopener noreferrer" title="View on explorer" style={{ fontSize: 12 }}>🔍</a>
                   {r.hash && <span className="mono" style={{ color: '#7c8aa5' }}> · {r.hash.slice(0, 12)}…</span>}
                 </p>
               ))}

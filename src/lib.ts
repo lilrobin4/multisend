@@ -68,3 +68,14 @@ export function shortBatchId(): string {
   for (const v of buf) s += abc[v % abc.length];
   return s;
 }
+
+export function explorerBase(network: string): string {
+  return network === 'mainnet' ? 'https://nimiq.watch/' : 'https://test.nimiq.watch/';
+}
+
+/** Account page on NimiqWatch explorer, e.g. https://test.nimiq.watch/#NQ78+STT4+... */
+export function explorerLink(network: string, address: string): string {
+  const n = normNQ(address);
+  const groups = n.match(/.{1,4}/g) || [n];
+  return `${explorerBase(network)}#${groups.join('+')}`;
+}
