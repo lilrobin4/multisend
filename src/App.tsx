@@ -284,7 +284,7 @@ export default function App() {
       </div>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0 16px' }}>
         <span className="brand">
-          <img src="/nimiq-hex.png" alt="Nimiq" className="brand-hex" />
+          <img src="/nim-multisend-logo.png" alt="NimMultiSend" className="brand-hex" />
           <span className="brand-name">NimMultiSend</span>
         </span>
         {!me ? (
