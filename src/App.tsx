@@ -246,10 +246,20 @@ export default function App() {
     );
   }
 
+  const canSend = !!me && filled.length > 0 && invalid.length === 0;
+
   return (
-    <div style={{ maxWidth: 640, margin: '0 auto', padding: '16px 16px 48px' }}>
+    <div style={{ maxWidth: 640, margin: '0 auto', padding: '16px 16px 48px', position: 'relative' }}>
+      <div className="orbs" aria-hidden="true">
+        <span className="orb o1" />
+        <span className="orb o2" />
+        <span className="orb o3" />
+      </div>
       <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 0 16px' }}>
-        <span style={{ color: '#fff', fontWeight: 800, fontSize: 20 }}>💸 MultiSend</span>
+        <span className="brand">
+          <img src="/nimiq-hex.png" alt="Nimiq" className="brand-hex" />
+          <span className="brand-name">NimMultiSend</span>
+        </span>
         {!me ? (
           <button className="btn btn-secondary" style={{ minHeight: 40, padding: '8px 14px', fontSize: 14 }} onClick={connect}>
             Connect wallet
@@ -265,7 +275,7 @@ export default function App() {
           {NETWORK !== 'mainnet' && ' · Nimiq Pay: menu → long-press ⚙ 10s → Testnet + free NIM'}
           {NETWORK === 'mainnet' && ' · real NIM will move'}
         </p>
-        <h1 style={{ fontSize: 24 }}>Pay everyone at once.</h1>
+        <h1 className="rainbow">Pay everyone at once.</h1>
         <div className="steps">
           <span className="step">1️⃣ Paste list</span>
           <span className="step-arrow">→</span>
@@ -342,7 +352,7 @@ export default function App() {
             const err = rowError(r);
             const isDupe = validAddress(r.address) && dupes.has(normNQ(r.address));
             return (
-              <div key={r.key} className="card" style={{ marginTop: 8, borderColor: err ? '#a33' : undefined }}>
+              <div key={r.key} className="card row-in" style={{ marginTop: 8, borderColor: err ? '#a33' : undefined }}>
                 <input
                   className="input mono"
                   placeholder="NQ… recipient address"
@@ -387,9 +397,9 @@ export default function App() {
               {invalid.length > 0 && <span className="chip">🚫 {invalid.length} invalid</span>}
             </div>
             <button
-              className="btn btn-primary"
+              className={`btn btn-primary ${canSend ? 'send-ready' : ''}`}
               style={{ width: '100%' }}
-              disabled={!me || filled.length === 0 || invalid.length > 0}
+              disabled={!canSend}
               onClick={start}
             >
               {!me
@@ -436,13 +446,13 @@ export default function App() {
             </div>
           </div>
           {sendRows.map((r) => (
-            <div key={r.key} className="card" style={{ marginTop: 8 }}>
+            <div key={r.key} className="card row-in" style={{ marginTop: 8 }}>
               <p style={{ margin: 0, fontSize: 14 }}>
                 <strong>{formatNim(r.luna)}</strong> → <span className="mono">{shortAddr(r.address, 12)}</span>
                 {r.label && <span style={{ color: '#a9b4cc' }}> ({r.label})</span>}
               </p>
               <p style={{ margin: '4px 0 0', fontSize: 13, color: '#a9b4cc' }}>
-                {STATUS_PILL[r.status]}
+                <span className={`st st-${r.status}`}>{STATUS_PILL[r.status]}</span>
                 {r.hash && <span className="mono" style={{ fontSize: 12 }}> · {r.hash.slice(0, 16)}…</span>}
                 {r.error && <span style={{ color: '#ff8a8a' }}> · {r.error}</span>}
               </p>
@@ -498,6 +508,10 @@ export default function App() {
           ))}
         </div>
       )}
+
+      <div className="footer-brand">
+        ⬡ <b>NimMultiSend</b> · batch NIM payments · NIM-only · {NETWORK}
+      </div>
     </div>
   );
 }

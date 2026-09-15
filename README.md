@@ -1,4 +1,4 @@
-# 💸 MultiSend — pay everyone at once with NIM
+# ⬡ NimMultiSend — pay everyone at once with NIM
 
 A Nimiq Pay Mini App. Neither the Nimiq wallet nor any mini app offers batch payments —
 paying 10 people means 10 manual transfers. MultiSend fixes that: paste a list, review
