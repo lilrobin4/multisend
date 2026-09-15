@@ -62,6 +62,8 @@ export default function App() {
   const running = useRef(false);
   const pausedRef = useRef(false);
   const savedRef = useRef('');
+  // Fresh-state mirror: the queue always iterates this ref, never stale closures.
+  const queueRef = useRef<SendRow[]>([]);
 
   const filled = useMemo(
     () => rows.filter((r) => r.address.trim() || r.amount.trim() || r.label.trim()),
@@ -96,23 +98,23 @@ export default function App() {
   }
 
   function patchRow(key: string, patch: Partial<SendRow>) {
-    setSendRows((prev) => prev.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+    queueRef.current = queueRef.current.map((r) => (r.key === key ? { ...r, ...patch } : r));
+    setSendRows(queueRef.current);
   }
 
   async function runQueue() {
     if (running.current) return;
+    const keys = queueRef.current.map((r) => r.key);
+    if (keys.length === 0) {
+      setNote('Nothing to send — the list is empty.');
+      return;
+    }
     running.current = true;
     setNote(null);
-    const keys = sendRows.map((r) => r.key);
     for (const key of keys) {
       if (!running.current) break;
-      const cur = await new Promise<SendRow | undefined>((resolve) => {
-        setSendRows((prev) => {
-          resolve(prev.find((r) => r.key === key));
-          return prev;
-        });
-      });
-      if (!cur || !['queued', 'failed', 'cancelled'].includes(cur.status)) continue;
+      const cur = queueRef.current.find((r) => r.key === key);
+      if (!cur || !['queued', 'failed', 'cancelled', 'unconfirmed'].includes(cur.status)) continue;
       while (pausedRef.current) {
         if (!running.current) break;
         await sleep(400);
@@ -120,7 +122,7 @@ export default function App() {
       if (!running.current) break;
       patchRow(key, { status: 'approving', error: null });
       try {
-        const hash = await sendOne(cur.address, cur.luna, `multisend:${batchId}:${key}`);
+        const hash = await sendOne(cur.address, cur.luna, `multisend:${batchIdRef.current}:${key}`);
         patchRow(key, { status: 'sent', hash });
         void waitConfirm(hash).then((st) => {
           if (st === 'confirmed') patchRow(key, { status: 'confirmed' });
@@ -139,46 +141,49 @@ export default function App() {
     maybeSaveHistory();
   }
 
+  const batchIdRef = useRef('');
+  const meRef = useRef<string | null>(null);
+  meRef.current = me;
+
   function maybeSaveHistory() {
-    setSendRows((prev) => {
-      const done = prev.every((r) => ['confirmed', 'unconfirmed', 'failed', 'cancelled'].includes(r.status));
-      if (done && prev.length > 0 && me && savedRef.current !== batchId) {
-        savedRef.current = batchId;
-        const batch: HistBatch = {
-          id: batchId,
-          at: Date.now(),
-          from: me,
-          rows: prev.map((r) => ({
-            address: r.address,
-            amount: String(r.luna / 100000),
-            label: r.label,
-            status: r.status,
-            hash: r.hash,
-          })),
-        };
-        pushHistory(batch);
-        setHistory(loadHistory());
-      }
-      return prev;
-    });
+    const prev = queueRef.current;
+    const done = prev.length > 0 && prev.every((r) => ['confirmed', 'unconfirmed', 'failed', 'cancelled'].includes(r.status));
+    if (done && meRef.current && savedRef.current !== batchIdRef.current) {
+      savedRef.current = batchIdRef.current;
+      const batch: HistBatch = {
+        id: batchIdRef.current,
+        at: Date.now(),
+        from: meRef.current,
+        rows: prev.map((r) => ({
+          address: r.address,
+          amount: String(r.luna / 100000),
+          label: r.label,
+          status: r.status,
+          hash: r.hash,
+        })),
+      };
+      pushHistory(batch);
+      setHistory(loadHistory());
+    }
   }
 
   function start() {
     if (!me || filled.length === 0 || invalid.length > 0) return;
     const id = shortBatchId();
     setBatchId(id);
+    batchIdRef.current = id;
     savedRef.current = '';
-    setSendRows(
-      filled.map((r) => ({
-        key: r.key,
-        address: r.address.trim(),
-        luna: parseNimToLuna(r.amount)!,
-        label: r.label.trim(),
-        status: 'queued' as SendStatus,
-        hash: null,
-        error: null,
-      })),
-    );
+    const fresh: SendRow[] = filled.map((r) => ({
+      key: r.key,
+      address: r.address.trim(),
+      luna: parseNimToLuna(r.amount)!,
+      label: r.label.trim(),
+      status: 'queued' as SendStatus,
+      hash: null,
+      error: null,
+    }));
+    queueRef.current = fresh;
+    setSendRows(fresh);
     setPhase('sending');
     setPaused(false);
     pausedRef.current = false;
@@ -186,9 +191,12 @@ export default function App() {
   }
 
   function retryFailed() {
-    setSendRows((prev) =>
-      prev.map((r) => (r.status === 'failed' || r.status === 'cancelled' || r.status === 'unconfirmed' ? { ...r, status: 'queued' as SendStatus, error: null } : r)),
+    queueRef.current = queueRef.current.map((r) =>
+      r.status === 'failed' || r.status === 'cancelled' || r.status === 'unconfirmed'
+        ? { ...r, status: 'queued' as SendStatus, error: null }
+        : r,
     );
+    setSendRows(queueRef.current);
     savedRef.current = '';
     setTimeout(runQueue, 50);
   }
