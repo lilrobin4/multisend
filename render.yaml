@@ -1,0 +1,14 @@
+# MultiSend on Render: STATIC site (free, no sleep, no wipe — pure client app).
+services:
+  - type: static
+    name: multisend
+    buildCommand: npm install --include=dev && npm run build
+    staticPublishPath: dist
+    pullRequestPreviewsEnabled: false
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: VITE_NETWORK
+        value: testnet
+      - key: VITE_NIMIQ_RPC_URL
+        value: https://rpc.testnet.nimiqwatch.com/
