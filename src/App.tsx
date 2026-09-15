@@ -128,6 +128,7 @@ export default function App() {
           if (st === 'confirmed') patchRow(key, { status: 'confirmed' });
           else if (st === 'failed') patchRow(key, { status: 'failed', error: 'tx failed on-chain' });
           else patchRow(key, { status: 'unconfirmed' });
+          maybeSaveHistory();
         });
         remember(cur.address, cur.label);
       } catch (e) {
@@ -199,6 +200,23 @@ export default function App() {
     setSendRows(queueRef.current);
     savedRef.current = '';
     setTimeout(runQueue, 50);
+  }
+
+  const allTerminal =
+    sendRows.length > 0 &&
+    sendRows.every((r) => ['confirmed', 'unconfirmed', 'failed', 'cancelled'].includes(r.status));
+
+  function newBatch() {
+    running.current = false;
+    pausedRef.current = false;
+    setPaused(false);
+    queueRef.current = [];
+    setSendRows([]);
+    setBatchId('');
+    batchIdRef.current = '';
+    setRows([{ key: newKey(), address: '', amount: '', label: '' }]);
+    setPhase('edit');
+    setNote(null);
   }
 
   function backToEdit() {
@@ -427,6 +445,14 @@ export default function App() {
 
       {tab === 'send' && phase === 'sending' && (
         <div>
+          {allTerminal && (
+            <div className="card" style={{ marginTop: 12, textAlign: 'center', borderColor: '#3ddc84' }}>
+              <p style={{ margin: 0, fontWeight: 800 }}>🎉 Batch {batchId} complete — saved to History.</p>
+              <button className="btn btn-primary" style={{ marginTop: 10 }} onClick={newBatch}>
+                ✨ New batch
+              </button>
+            </div>
+          )}
           <div className="card" style={{ marginTop: 12 }}>
             <p style={{ margin: 0, fontWeight: 800 }}>Batch {batchId} · {terminal}/{sendRows.length} done</p>
             <div className="bar">
