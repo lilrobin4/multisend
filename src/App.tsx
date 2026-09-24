@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { explorerLink, formatNim, normNQ, parseCSV, parseNimToLuna, shortAddr, shortBatchId, validAddress } from './lib';
 import { NETWORK, connectWallet, sendOne, waitConfirm } from './nimiq';
 import { loadBook, loadHistory, pushHistory, remember, saveBook } from './storage';
@@ -47,6 +47,7 @@ function rowError(r: EditRow): string | null {
 
 export default function App() {
   const [me, setMe] = useState<string | null>(null);
+  const [waking, setWaking] = useState(true);
   const [tab, setTab] = useState<'send' | 'book' | 'history'>('send');
   const [rows, setRows] = useState<EditRow[]>([{ key: newKey(), address: '', amount: '', label: '' }]);
   const [phase, setPhase] = useState<'edit' | 'sending'>('edit');
@@ -88,6 +89,17 @@ export default function App() {
   const terminal = sendRows.filter((r) =>
     ['confirmed', 'unconfirmed', 'failed', 'cancelled'].includes(r.status),
   ).length;
+
+  // Silent session restore on load/refresh: Nimiq Pay remembers the mini-app
+  // permission, so listAccounts() succeeds without another tap or popup.
+  useEffect(() => {
+    let alive = true;
+    connectWallet()
+      .then((addr) => { if (alive) setMe(addr); })
+      .catch(() => {})
+      .finally(() => { if (alive) setWaking(false); });
+    return () => { alive = false; };
+  }, []);
 
   async function connect() {
     try {
@@ -288,9 +300,13 @@ export default function App() {
           <span className="brand-name">NimMultiSend</span>
         </span>
         {!me ? (
-          <button className="btn btn-secondary" style={{ minHeight: 40, padding: '8px 14px', fontSize: 14 }} onClick={connect}>
-            Connect wallet
-          </button>
+          waking ? (
+            <span style={{ fontSize: 13, color: '#9fb2d8' }}>Connecting…</span>
+          ) : (
+            <button className="btn btn-secondary" style={{ minHeight: 40, padding: '8px 14px', fontSize: 14 }} onClick={connect}>
+              Connect wallet
+            </button>
+          )
         ) : (
           <span className="mono" style={{ fontSize: 13, color: '#7ee2a8' }}>{shortAddr(me, 12)}</span>
         )}
