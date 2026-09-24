@@ -22,7 +22,7 @@ const RPCS = {
 // ?network=mainnet (or testnet) overrides the build default — promotion without rebuild.
 const qn = typeof window !== 'undefined' ? queryNetwork() : null;
 export const NETWORK: 'mainnet' | 'testnet' =
-  qn || (import.meta.env.VITE_NETWORK === 'mainnet' ? 'mainnet' : 'testnet');
+  qn || (import.meta.env.VITE_NETWORK === 'testnet' ? 'testnet' : 'mainnet');
 export const RPC_URL =
   (qn ? RPCS[qn] : import.meta.env.VITE_NIMIQ_RPC_URL) || RPCS[NETWORK];
 

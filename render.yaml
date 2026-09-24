@@ -9,6 +9,6 @@ services:
       - key: NODE_VERSION
         value: 22.22.0
       - key: VITE_NETWORK
-        value: testnet
+        value: mainnet
       - key: VITE_NIMIQ_RPC_URL
-        value: https://rpc.testnet.nimiqwatch.com/
+        value: https://rpc.nimiqwatch.com
